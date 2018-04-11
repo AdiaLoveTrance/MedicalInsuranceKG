@@ -8,8 +8,8 @@ nlp = BosonNLP('YGrN2PDi.22096.Qp-06MnNaWED')
 
 def ExtOrg(wordlist,taglist,filepath):
     centretag = ['#nr', '#ns', '#nt']
-    centreword = ['机构', '部门', '局', '管理局', '站', '服务站', '中心']
-    relist = [r'(#n)+(#b|z)*', r'(#n)+(#an|#nz)?', r'(#n)+', r'(#n)+', r'#n#an(#n)+', r'#n#an(#n)+', r'(#n)+(#an)?(#n)*']
+    centreword = ['机构', '部门', '局', '管理局', '站', '服务站', '中心','保险','对象','基金','费用','资金','公司']
+    relist = [r'(#n)+(#b|z)*', r'(#n)+(#an|#nz)?', r'(#n)+', r'(#n)+', r'#n#an(#n)+', r'#n#an(#n)+', r'(#n)+(#an)?(#n)*',r'(#n)+(#a(#n)*)?',r'(#n)+(#a(#n)*)?',r'(#n)+(#a)?(#n)+',r'(#n)+(#a|#b)?',r'(#n)+(#a)?',r'(#n)+']
     entities = set()
     for it1, it2 in zip(wordlist, taglist):
         if it2 in centretag:
@@ -34,7 +34,7 @@ def ExtOrg(wordlist,taglist,filepath):
                         str = str + w[l]
                     print(str)
                     entities.add(str)
-    file = open(filepath,'a',encoding='utf-8')
+    file = open(filepath,'w',encoding='utf-8')
     for en in entities:
         file.write(en+'\n')
     file.close()
