@@ -9,7 +9,6 @@ cws_model_path = os.path.join(LTP_DATA_DIR, 'cws.model')  # 分词模型路径�
 pos_model_path = os.path.join(LTP_DATA_DIR, 'pos.model')  # 词性标注模型路径，模型名称为`pos.model`
 ner_model_path = os.path.join(LTP_DATA_DIR, 'ner.model')  # 命名实体识别模型路径，模型名称为`pos.model`
 par_model_path = os.path.join(LTP_DATA_DIR, 'parser.model')  # 依存句法分析模型路径，模型名称为`parser.model`
-srl_model_path = os.path.join(LTP_DATA_DIR, 'pisrl_win.model')  # 语义角色标注模型
 
 segmentor = Segmentor()
 segmentor.load_with_lexicon(cws_model_path,'E:\\ltp_data_v3.4.0\\personal_seg.txt')
@@ -21,13 +20,17 @@ parser = Parser()
 parser.load(par_model_path)
 
 #输入文件
-in_file_path = 'E:\\医疗保险测试语料库\\'
+in_file_path = 'E:\\医疗保险语料待解析\\'
 in_files_name = os.listdir(in_file_path)
 #实体集
-entity_file_path = 'E:\\规则实体抽取\\'
+entity_file_path = 'E:\\实体抽取\\'
 out_file_path = 'E:\\实体关系抽取\\'
 
-# in_file_name = "input.txt"
+entities2 = []
+entity_file2 = open('E:\\医疗保险语料库\\领域词典.txt', 'r', encoding='utf-8')
+for e in entity_file2.readlines():
+    entities2.append(e.strip('\n'))
+entity_file2.close()
 
 def extraction_start(in_file_name, out_file_name, entity_file_name):
     """
@@ -40,17 +43,21 @@ def extraction_start(in_file_name, out_file_name, entity_file_name):
     #输入文件
     in_file = open(in_file_name, 'r', encoding='utf-8')
     #获取实体
-    entities = []
+    entities = set()
     entity_file = open(entity_file_name, 'r', encoding='utf-8')
     for e in entity_file.readlines():
-        entities.append(e)
+        entities.add(e.strip('\n'))
     entity_file.close()
+    for e2 in entities2:
+        entities.add(e2)
+
     rows = []
     for line in in_file.readlines():
-        line = FileDispose.CleanSentence(line.strip())
-        fact_triple_extract(line, rows)
+        line = line.strip()
+        fact_triple_extract(line.strip('\n'), rows)
     in_file.close()
     #对写入数据进行清洗
+    clean_rows(entities, rows)
     write_out_file(out_file_name, rows)
 
 def fact_triple_extract(sentence, rows):
@@ -67,7 +74,7 @@ def fact_triple_extract(sentence, rows):
     arcs = parser.parse(words, postags)
     # print("\t".join("%d:%s" % (arc.head, arc.relation) for arc in arcs))
 
-    child_dict_list = build_parse_child_dict(words, postags, arcs)
+    child_dict_list = build_parse_child_dict(words, arcs)
     for index in range(len(postags)):
         # 抽取以谓词为中心的事实三元组
         if postags[index] == 'v':
@@ -141,7 +148,7 @@ def fact_triple_extract(sentence, rows):
                 # out_file.write("#介宾关系#\t(%s, %s, %s)\n" % (e1, r, e2))
                 # out_file.flush()
 
-def build_parse_child_dict(words, postags, arcs):
+def build_parse_child_dict(words, arcs):
     """
     为句子中的每个词语维护一个保存句法依存儿子节点的字典
     Args:
@@ -223,10 +230,43 @@ def write_out_file(out_file_name, rows):
         f_csv = csv.DictWriter(f, headers)
         f_csv.writerows(rows)
 
+def clean_rows(entities, rows):
+    """
+    对要写入的字典序列rows进行清洗，只写入包含实体的rows
+    :param rows: 实体关系三元组字典序
+    :return:
+    """
+    tmp = []
+    for row in rows:
+        e1find = 0
+        e2find = 0
+        str1 = str(row['e1'])
+        str2 = str(row['e2'])
+        for e in entities:
+            if str1.find(e) != -1 and e1find == 0:
+                # row['e1'] = e
+                e1find = 1
+            if str2.find(e) != -1 and e2find == 0:
+                # row['e2'] = e
+                e2find = 1
+        if e1find == 1 or e2find ==1:
+            tmp.append(row)
+    rows.clear()
+    for t in tmp:
+        rows.append(t)
 
 if __name__ == "__main__":
+    # in_files_name = ['1.txt']
+    ff = []
+    with open('./已处理文件.txt', 'r', encoding='utf-8') as f:
+        for l in f.readlines():
+            ff.append(l.strip('\n'))
+    in_files_name2 = []
     for file in in_files_name:
-        print("正在处理"+file)
+        if file not in ff:
+            in_files_name2.append(file.strip('\n'))
+    for file in in_files_name2:
+        print(file)
         # 合成输入文件位置
         in_file_name = in_file_path + file
         # 获取输入文件的省市

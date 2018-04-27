@@ -41,7 +41,7 @@ def extraction_start(in_file_name, out_file_name, begin_line, end_line):
         end_line: 读文件的结束行
     """
     in_file = open(in_file_name, 'r', encoding='utf-8')
-    out_file = open(out_file_name, 'a', encoding='utf-8')
+    out_file = open(out_file_name, 'w', encoding='utf-8')
 
     for line in in_file:
         fact_triple_extract(line.strip(), out_file)
@@ -57,11 +57,12 @@ def fact_triple_extract(sentence, out_file):
     """
     # print sentence
     words = segmentor.segment(sentence)
-    # print "\t".join(words)
+    print("\t".join(words))
     postags = postagger.postag(words)
+    print("\t".join(postags))
     netags = recognizer.recognize(words, postags)
     arcs = parser.parse(words, postags)
-    # print "\t".join("%d:%s" % (arc.head, arc.relation) for arc in arcs)
+    print("\t".join("%d:%s" % (arc.head, arc.relation) for arc in arcs))
 
     child_dict_list = build_parse_child_dict(words, postags, arcs)
     for index in range(len(postags)):

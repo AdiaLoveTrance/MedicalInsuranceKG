@@ -1,7 +1,7 @@
 import os
 
-entityfile = 'D:\\规则实体抽取\\2.txt'
-originalfile = 'D:\\医疗保险测试语料库\\2.txt'
+entityfile = 'E:\\规则实体抽取\\1.txt'
+originalfile = 'E:\\医疗保险测试语料库\\1.txt'
 
 entities = []
 with open(entityfile, 'r', encoding='utf-8') as f:

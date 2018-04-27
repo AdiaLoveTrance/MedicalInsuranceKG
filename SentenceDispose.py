@@ -1,7 +1,7 @@
 # -*- encoding: utf-8 -*-
 import os
 
-inputpath = 'D:\\医疗保险测试语料库\\'
+inputpath = 'E:\\医疗保险测试语料库\\'
 filesname = os.listdir(inputpath)
 sentence = []
 
