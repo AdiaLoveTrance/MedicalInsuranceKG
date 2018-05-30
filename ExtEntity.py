@@ -3,18 +3,28 @@ from __future__ import print_function, unicode_literals
 from bosonnlp import BosonNLP
 import os
 import re
+# import ExtLocation
 
 nlp = BosonNLP('YGrN2PDi.22096.Qp-06MnNaWED')
 
 def ExtOrg(wordlist,taglist,filepath):
     centretag = ['#nr', '#ns', '#nt', '#m', '#nz', '#t']
     centreword = ['机构', '部门', '局', '管理局', '站', '服务站', '中心', '保险', '对象', '基金', '费用', '资金', '公司', '人群', '人员', '保险费']
-    relist = [r'(#n)+(#b|z)*', r'(#n)+(#an|#nz)?', r'(#n)+', r'(#n)+', r'#n#an(#n)+', r'#n#an(#n)+', r'(#n)+(#an)?(#n)*', r'(#n)+(#a(#n)*)?', r'(#n)+(#a(#n)*)?', r'(#n)+(#a)?(#n)+', r'(#n)+(#a|#b)?', r'(#n)+(#a)?', r'(#n)+', r'(#n)+(#a)?(#n)?', r'(#n)+((#b)+|(#a)*|#an(#n)+)', r'(#n)+(#v|#a(#n)+)']
+    relist = [r'#n(#n)+(#b|#nz)*', r'#n(#n)+(#an|#nz)?', r'#n(#n)+', r'#n(#n)+', r'#n#an(#n)+', r'#n#an(#n)+', r'#n(#n)+(#an)?(#n)*', r'#n(#n)+(#a(#n)*)?', r'(#n)+(#a(#n)*)?', r'#n(#n)+(#a)?(#n)+', r'#n(#n)+(#a|#b)?', r'#n(#n)+(#a)?', r'#n(#n)+', r'(#n)+(#a)?(#n)?', r'#n(#n)+((#b)+|(#a)*|#an(#n)+)', r'#n(#n)+(#v|#a(#n)+)']
+    ecrelist = [r'[0-9]+']
     entities = set()
     for it1, it2 in zip(wordlist, taglist):
         if it2 in centretag:
-            entities.add(it1)
-    # for k in range(0,len(centreword)):
+            if it2 == '#m':
+                for i in range(len(ecrelist)):
+                    pat = re.compile(ecrelist[i])
+                    m = pat.match(it1)
+                    if m:
+                        entities.add(it1)
+                        break
+            else:
+                entities.add(it1)
+
     for i in range(0, len(wordlist)):
         for k in range(0, len(centreword)):
             if wordlist[i] == centreword[k]:
@@ -55,15 +65,15 @@ def ExtEntity(in_file,out_file):
 
 
 in_filepath = 'E:\\MedicareCorpus\\'
-out_filepath = 'E:\\实体抽取带数字版本\\'
+out_filepath = 'E:\\实体抽取\\'
 in_files = os.listdir(in_filepath)
-# ffiles = os.listdir(out_filepath)
-# files = []
-# for f in in_files:
-#     if f not in ffiles:
-#         files.append(f)
+ffiles = os.listdir(out_filepath)
+files = []
+for f in in_files:
+    if f not in ffiles:
+        files.append(f)
 # print(files)
-for file in in_files:
+for file in files:
     in_file = in_filepath + file    #输入文件路径
     out_file = out_filepath + file  #输出文件路径
     print(file)

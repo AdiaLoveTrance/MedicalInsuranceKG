@@ -1,13 +1,11 @@
 # -*- coding: utf-8 -*-
+from pyltp import Segmentor, Postagger, Parser
 import os
 import csv
 import ExtLocation
-import FileDispose
-from pyltp import Segmentor, Postagger, Parser, NamedEntityRecognizer
 LTP_DATA_DIR = 'E:\\ltp_data_v3.4.0'  # ltp模型目录的路径
 cws_model_path = os.path.join(LTP_DATA_DIR, 'cws.model')  # 分词模型路径，模型名称为`cws.model`
 pos_model_path = os.path.join(LTP_DATA_DIR, 'pos.model')  # 词性标注模型路径，模型名称为`pos.model`
-ner_model_path = os.path.join(LTP_DATA_DIR, 'ner.model')  # 命名实体识别模型路径，模型名称为`pos.model`
 par_model_path = os.path.join(LTP_DATA_DIR, 'parser.model')  # 依存句法分析模型路径，模型名称为`parser.model`
 
 segmentor = Segmentor()
@@ -24,13 +22,7 @@ in_file_path = 'E:\\医疗保险语料待解析\\'
 in_files_name = os.listdir(in_file_path)
 #实体集
 entity_file_path = 'E:\\实体抽取\\'
-out_file_path = 'E:\\实体关系抽取\\'
-
-entities2 = []
-entity_file2 = open('E:\\医疗保险语料库\\领域词典.txt', 'r', encoding='utf-8')
-for e in entity_file2.readlines():
-    entities2.append(e.strip('\n'))
-entity_file2.close()
+out_file_path = 'E:\\实体关系抽取2\\'
 
 def extraction_start(in_file_name, out_file_name, entity_file_name):
     """
@@ -40,20 +32,16 @@ def extraction_start(in_file_name, out_file_name, entity_file_name):
     :param entity_file_name: 实体文件名
     :return:
     """
-    #输入文件
-    in_file = open(in_file_name, 'r', encoding='utf-8')
     #获取实体
-    entities = set()
+    entities = []
     entity_file = open(entity_file_name, 'r', encoding='utf-8')
     for e in entity_file.readlines():
-        entities.add(e.strip('\n'))
+        entities.append(e.strip('\n'))
     entity_file.close()
-    for e2 in entities2:
-        entities.add(e2)
-
+    #输入文件
+    in_file = open(in_file_name, 'r', encoding='utf-8')
     rows = []
     for line in in_file.readlines():
-        line = line.strip()
         fact_triple_extract(line.strip('\n'), rows)
     in_file.close()
     #对写入数据进行清洗
@@ -67,6 +55,7 @@ def fact_triple_extract(sentence, rows):
     :param rows: 字典序列
     :return:
     """
+    global segmentor,postagger,parser
     words = segmentor.segment(sentence)
     # print("\t".join(words))
     postags = postagger.postag(words)
@@ -88,9 +77,7 @@ def fact_triple_extract(sentence, rows):
                     for i in range(len(e1_child_dict['COO'])):
                         e1.append(complete_e(words, postags, child_dict_list, e1_child_dict['COO'][i]))
                 e1.append(complete_e(words, postags, child_dict_list, child_dict['SBV'][0]))
-                # r = words[index]
                 r = complete_r(words, postags, child_dict_list, index)
-                # e2 = complete_e(words, postags, child_dict_list, child_dict['VOB'][0])
                 e2_index = child_dict['VOB'][0]
                 e2_child_dict = child_dict_list[e2_index]
                 e2 = []
@@ -100,12 +87,11 @@ def fact_triple_extract(sentence, rows):
                         e2.append(complete_e(words, postags, child_dict_list, e2_child_dict['COO'][i]))
                 for e_1 in e1:
                     for e_2 in e2:
-                        # out_file.write("#主语谓语宾语关系#\t(%s, %s, %s)\n" % (e_1, r, e_2))
-                        # out_file.flush()
                         relation = dict()
                         relation['e1'] = e_1
                         relation['r'] = r
                         relation['e2'] = e_2
+                        relation['sentence'] = sentence
                         rows.append(relation)
             #前置宾语
             if 'FOB' in child_dict and 'ADV' in child_dict:
@@ -120,16 +106,14 @@ def fact_triple_extract(sentence, rows):
                         if 'COO' in e1_coo_child_dict.keys():
                             for i in range(len(e1_coo_child_dict['COO'])):
                                 e1.append(complete_e(words, postags, child_dict_list, e1_coo_child_dict['COO'][i]))
-
-                r = words[index]
+                r = complete_r(words, postags, child_dict_list, index)
                 e2 = complete_e(words, postags, child_dict_list, child_dict['FOB'][0])
                 for e0 in e1:
-                    # out_file.write("#前置宾语#\t(%s, %s, %s)\n" % (e0, r, e2))
-                    # out_file.flush()
                     relation = dict()
                     relation['e1'] = e0
                     relation['r'] = r
                     relation['e2'] = e2
+                    relation['sentence'] = sentence
                     rows.append(relation)
 
         if arcs[index].relation == 'HED':
@@ -138,15 +122,14 @@ def fact_triple_extract(sentence, rows):
             if 'SBV' in child_dict and 'POB' in child_dict:
                 e1 = complete_e(words, postags, child_dict_list, child_dict['SBV'][0])
                 eindex = child_dict['POB'][0]
-                r = words[eindex]
+                r = complete_r(words, postags, child_dict_list, index)
                 e2 = complete_e(words, postags, child_dict_list, eindex)
                 relation = dict()
                 relation['e1'] = e1
                 relation['r'] = r
                 relation['e2'] = e2
+                relation['sentence'] = sentence
                 rows.append(relation)
-                # out_file.write("#介宾关系#\t(%s, %s, %s)\n" % (e1, r, e2))
-                # out_file.flush()
 
 def build_parse_child_dict(words, arcs):
     """
@@ -208,9 +191,9 @@ def complete_r(words, postags, child_dict_list, word_index):
     if 'CMP' in child_dict:
         for i in range(len(child_dict['CMP'])):
             postfix += complete_r(words, postags, child_dict_list, child_dict['CMP'][i])
-    # if 'VOB' in child_dict:
-    #     for i in range(len(child_dict['VOB'])):
-    #         postfix += complete_r(words, postags, child_dict_list, child_dict['VOB'][i])
+    if 'VOB' in child_dict:
+        for i in range(len(child_dict['VOB'])):
+            postfix += complete_r(words, postags, child_dict_list, child_dict['VOB'][i])
     if 'POB' in child_dict:
         for i in range(len(child_dict['POB'])):
             postfix += complete_r(words, postags, child_dict_list, child_dict['POB'][i])
@@ -225,10 +208,11 @@ def write_out_file(out_file_name, rows):
     :return:
     """
     #输出文件
-    headers = ['e1', 'r', 'e2']
+    headers = ['e1', 'r', 'e2', 'sentence']
     with open(out_file_name, 'a', encoding='utf-8') as f:
         f_csv = csv.DictWriter(f, headers)
         f_csv.writerows(rows)
+        f.flush()
 
 def clean_rows(entities, rows):
     """
@@ -244,10 +228,10 @@ def clean_rows(entities, rows):
         str2 = str(row['e2'])
         for e in entities:
             if str1.find(e) != -1 and e1find == 0:
-                # row['e1'] = e
+                row['e1'] = e
                 e1find = 1
             if str2.find(e) != -1 and e2find == 0:
-                # row['e2'] = e
+                row['e2'] = e
                 e2find = 1
         if e1find == 1 or e2find ==1:
             tmp.append(row)
@@ -256,7 +240,7 @@ def clean_rows(entities, rows):
         rows.append(t)
 
 if __name__ == "__main__":
-    # in_files_name = ['1.txt']
+    # in_files_name2 = ['1.txt']
     ff = []
     with open('./已处理文件.txt', 'r', encoding='utf-8') as f:
         for l in f.readlines():
@@ -270,7 +254,7 @@ if __name__ == "__main__":
         # 合成输入文件位置
         in_file_name = in_file_path + file
         # 获取输入文件的省市
-        location = ExtLocation.ExtLocation(in_file_name)
+        location = ExtLocation.ExtLocation(in_file_name, segmentor, postagger)
         out_file_name = out_file_path + str(location) + '.csv'
         entity_file_name = entity_file_path + file
         extraction_start(in_file_name, out_file_name, entity_file_name)

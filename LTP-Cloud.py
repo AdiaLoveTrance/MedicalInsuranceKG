@@ -1,18 +1,32 @@
 # -*- coding:utf8 -*-
-import urllib.request
-import urllib.parse
+import os
 
-if __name__ == '__main__':
-    url_get_base = "https://api.ltp-cloud.com/analysis/"
-    args = {
-        'api_key' : 'j1o7q6T2P6NpsCTUhfDYDrIPCOspevdOwWglmylX',
-        'text' : '经市政府研究同意，现将《宜春市整合城乡居民基本医疗保险工作实施方案》印发给你们，请对照要求，结合实际，认真执行，抓好落实。',
-        'pattern' : 'ner',
-        'format' : 'plain',
-        'only_ner':'true'
-    }
-    result=urllib.request.urlopen(url_get_base,urllib.parse.urlencode(args).encode('utf-8'))
-    content = result.read().strip()
-    print(content.decode('utf-8'))
+path = 'E:\\实体关系抽取2\\'
+files = os.listdir(path)
+for f in files:
+    print(f)
+    file = path + f
+    e = set()
+    with open(file, 'r', encoding='utf-8') as ff:
+        for line in ff.readlines():
+            part = line.split(',')
+            # if not part[0].isdigit():
+            if len(part[0]) != 1:
+                e.add(line)
+    ff.close()
+    with open(file, 'w', encoding='utf-8') as fff:
+        for ee in e:
+            fff.write(ee)
 
+# path = 'E:\\实体抽取\\'
+# files = os.listdir(path)
+# entity = set()
+#
+# for file in files:
+#     filename = path + file
+#     with open(filename, 'r', encoding='utf-8') as f:
+#         for line in f.readlines():
+#             entity.add(line)
+#
+# print(len(entity))
 
